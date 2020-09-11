@@ -28,6 +28,30 @@ app.get("/", function(req, res){
     res.render("home");
 });
 
+app.get("/results", function(req, res){
+    // serve the homepage
+    var context = {};
+    res.status(200);
+    console.log(context);
+    res.render("home");
+});
+
+app.get("/multiple-results", function(req, res){
+    // serve the homepage
+    var context = {};
+    res.status(200);
+    console.log(context);
+    res.render("home");
+});
+
+app.get("/no-results", function(req, res){
+    // serve the homepage
+    var context = {};
+    res.status(200);
+    console.log(context);
+    res.render("home");
+});
+
 // example get and post routes from previous projects/assignments
 // use as framework for this project
 
