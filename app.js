@@ -32,7 +32,7 @@ app.get("/results", function(req, res){
     var context = {};
     res.status(200);
     console.log(context);
-    res.render("home");
+    res.render("results");
 });
 
 app.get("/multiple-results", function(req, res){
@@ -40,7 +40,7 @@ app.get("/multiple-results", function(req, res){
     var context = {};
     res.status(200);
     console.log(context);
-    res.render("home");
+    res.render("multiple-results");
 });
 
 app.get("/no-results", function(req, res){
@@ -48,7 +48,7 @@ app.get("/no-results", function(req, res){
     var context = {};
     res.status(200);
     console.log(context);
-    res.render("home");
+    res.render("no-results");
 });
 
 // example get and post routes from previous projects/assignments
