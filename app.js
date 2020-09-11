@@ -21,7 +21,6 @@ app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
 app.get("/", function(req, res){
-    // serve the homepage
     var context = {};
     res.status(200);
     console.log(context);
@@ -29,7 +28,9 @@ app.get("/", function(req, res){
 });
 
 app.get("/results", function(req, res){
-    // serve the homepage
+    // serve successful city search
+    // will the front-end handle request to api and handle api response?
+        // if so, then front end will request each page from server based on its response
     var context = {};
     res.status(200);
     console.log(context);
@@ -37,7 +38,7 @@ app.get("/results", function(req, res){
 });
 
 app.get("/multiple-results", function(req, res){
-    // serve the homepage
+    // user needs to select from multiple possible results
     var context = {};
     res.status(200);
     console.log(context);
@@ -45,7 +46,7 @@ app.get("/multiple-results", function(req, res){
 });
 
 app.get("/no-results", function(req, res){
-    // serve the homepage
+    // unsuccessful initial search
     var context = {};
     res.status(200);
     console.log(context);
