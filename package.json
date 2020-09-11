@@ -1,0 +1,18 @@
+{
+    "name": "CoVisClear",
+    "version": "1.0.0",
+    "description": "A web application that lets users see COVID-19 case data based upon location.",
+    "main": "app.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Timothy Yoon, Rohit Chaudhary, Patricia Booth, Anjanette Oborn",
+    "license": "",
+    "dependencies": {
+      "body-parser": "^",
+      "express": "^",
+      "express-handlebars": "^",
+      "express-session": "^",
+      "mysql": "^"
+    }
+  }
