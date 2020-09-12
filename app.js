@@ -25,6 +25,14 @@ app.get("/", function(req, res){
     res.render("home");
 });
 
+app.get("/validate-location", function(req, res) {
+    console.log("The user entered:", req.query.location);
+    // Check if the city/state pair exists
+
+    // Find the county corresponding to the city and state
+
+});
+
 app.get("/results", function(req, res){
     // serve successful city search
     // will the front-end handle request to api and handle api response?
