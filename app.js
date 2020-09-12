@@ -59,6 +59,14 @@ app.get("/no-results", function(req, res){
     res.render("no-results");
 });
 
+app.get("/about", function(req, res){
+    // about page
+    var context = {};
+    res.status(200);
+    console.log(context);
+    res.render("about");
+});
+
 // example get and post routes from previous projects/assignments
 // use as framework for this project
 
