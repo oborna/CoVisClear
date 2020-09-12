@@ -12,7 +12,7 @@ var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
-app.set('port', 7500);
+app.set('port', process.env.PORT || 7500);
 
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
