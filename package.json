@@ -4,6 +4,7 @@
   "description": "A web application that lets users see COVID-19 case data based upon location.",
   "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "authors": "Timothy Yoon, Rohit Chaudhary, Patricia Booth, Anjanette Oborn",
