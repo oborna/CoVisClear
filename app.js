@@ -6,6 +6,7 @@
 
 var express = require('express');
 var request = require('request');
+var states = require('./public/states.json');
 
 var app = express();
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
@@ -17,6 +18,56 @@ app.set('port', process.env.PORT || 7500);
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
+
+// validation and request functions that will be used by routes
+function validateLocation(user_input) {
+    // validation and formatting for user-input received from form submit
+    return      
+    // return either {city:"validCityStr", state:"validStateStr"} or false
+    // if false, route handler will render "no-results" view
+}
+
+function covidReqHandler(county_name, state_name) {
+    // generate the api request url based on county name
+    covidAPI = "https://www.trackcorona.live/api/cities/"
+    county_substrings = county_name.split(" ")
+    for (let i=0; i < county_substrings.length; i++) {
+        covidAPI += county_substrings[i];
+        covidAPI += "%20";
+    }
+    covidAPI = covidAPI.slice(0, -3) //remove the last %20 from url
+
+    // send the request
+    request(covidAPI, function(err, response, body) {
+        if (!err && response.statusCode < 400) {
+            let info = JSON.parse(response.body);
+            console.log(info);
+            // res.render('lookup', context);      func return info only, the route will render view
+            // multiple results possible, need results based on state code
+            let results = info.data;
+            let covidData;
+            if (results.length == 0) {
+                // end func here, what do we return? false?
+                return false;
+            } else if (results.length == 1){
+                covidData = results[0];
+            } else {        // multiple county results, need to get the correct state
+                
+            }
+            return covidData;
+        } else {
+            console.log(err);
+            if (response) {
+                console.log(response.statusCode);
+            }
+            next(err);
+            return false;
+        }
+    });
+}
+
+// test covidReqHandler
+covidReqHandler("riverside");
 
 app.get("/", function(req, res){
     var context = {};
@@ -33,31 +84,31 @@ app.get("/validate-location", function(req, res) {
 
 });
 
-app.get("/results", function(req, res){
-    // serve successful city search
-    // will the front-end handle request to api and handle api response?
-        // if so, then front end will request each page from server based on its response
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("results");
-});
+// app.get("/results", function(req, res){
+//     // serve successful city search
+//     // will the front-end handle request to api and handle api response?
+//         // if so, then front end will request each page from server based on its response
+//     var context = {};
+//     res.status(200);
+//     console.log(context);
+//     res.render("results");
+// });
 
-app.get("/multiple-results", function(req, res){
-    // user needs to select from multiple possible results
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("multiple-results");
-});
+// app.get("/multiple-results", function(req, res){
+//     // user needs to select from multiple possible results
+//     var context = {};
+//     res.status(200);
+//     console.log(context);
+//     res.render("multiple-results");
+// });
 
-app.get("/no-results", function(req, res){
-    // unsuccessful initial search
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("no-results");
-});
+// app.get("/no-results", function(req, res){
+//     // unsuccessful initial search
+//     var context = {};
+//     res.status(200);
+//     console.log(context);
+//     res.render("no-results");
+// });
 
 app.get("/about", function(req, res){
     // about page
