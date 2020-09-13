@@ -31,7 +31,9 @@ function validateLocation(user_input) {
     let comma_index = raw_str.indexOf(',');
     let city_name = raw_str.slice(0, comma_index);
     let state_name = raw_str.slice(comma_index + 1, raw_str.length);
-    var county_name = undefined;
+    let county_name = undefined;
+    let latitude = undefined;
+    let longitude = undefined;
 
     // Build the URL for the call to the API
     let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${raw_str}`;
@@ -51,16 +53,20 @@ function validateLocation(user_input) {
                     res.render("no-results");
                 }
                 county_name = locations[0]["adminArea4"];
+                latitude = locations[0]["displayLatLng"]["lat"];
+                longitude = locations[0]["displayLatLng"]["lng"];
             } else {
                 res.render("no-results");
             }
             // Package data to return
-            let county_state = {
+            let county_state_coords = {
                 county: county_name,
-                state: state_name
+                state: state_name,
+                latitude: latitude,
+                longitude: longitude
             }
-            console.log("county_state", county_state);  // todo: remove
-            return county_state;        
+            console.log("county_state_coords:", county_state_coords);  // todo: remove
+            return county_state_coords;
         })
         .catch(function (err) {
             res.render("no-results");
@@ -120,10 +126,10 @@ app.get("/main-input-handler", function(req, res) {
     console.log("The user entered:", req.query.location);
 
     // Find the county corresponding to the city and state
-    let county_state = validateLocation(req.query.location);
-    console.log("in main handler, county_state is:", county_state)
-    if (county_state) {
-        res.render("results", county_state);   
+    let county_state_coords = validateLocation(req.query.location);
+    console.log("in main handler, county_state_coords is:", county_state_coords);
+    if (county_state_coords) {
+        res.render("results", county_state_coords);   
     } else {
         res.render("no-results");
     }
