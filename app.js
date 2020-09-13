@@ -26,6 +26,16 @@ app.use(express.json());
 
 // Validate the city/state input by checking data returned from the MapQuest API
 function validateLocation(user_input) {
+
+    // Object to return
+    let county_state_coords = {
+        county: "",
+        state: "",
+        latitude: "",
+        longitude: "",
+        success: ""
+    };
+
     // Remove all whitespace from the input string
     let raw_str = user_input.replace(/\s+/g, '');
     let comma_index = raw_str.indexOf(',');
@@ -42,7 +52,7 @@ function validateLocation(user_input) {
         uri: mapquest_url
     };
 
-    // Send request to the API
+    // Send GET request to the API
     request_promise(options)
         .then(function (response) {
             let mapquest_data = JSON.parse(response);
@@ -50,26 +60,27 @@ function validateLocation(user_input) {
                 let locations = mapquest_data["results"][0]["locations"];
                 // If the county info doesn't exist, then the city/state pair is invalid
                 if (locations[0]["adminArea4"] === "") {
-                    res.render("no-results");
+                    county_state_coords["success"] = false;
                 }
                 county_name = locations[0]["adminArea4"];
                 latitude = locations[0]["displayLatLng"]["lat"];
                 longitude = locations[0]["displayLatLng"]["lng"];
             } else {
-                res.render("no-results");
-            }
-            // Package data to return
-            let county_state_coords = {
-                county: county_name,
-                state: state_name,
-                latitude: latitude,
-                longitude: longitude
-            }
-            console.log("county_state_coords:", county_state_coords);  // todo: remove
+                county_state_coords["success"] = false;
+            } 
+            county_state_coords["county"] = county_name;
+            county_state_coords["state"] = state_name;
+            county_state_coords["latitude"] = latitude;
+            county_state_coords["longitude"] = longitude;
+            
+            console.log("county_state_coords in validateLocation():", county_state_coords);
+            county_state_coords["success"] = true;
             return county_state_coords;
         })
         .catch(function (err) {
-            res.render("no-results");
+            console.error(err);
+            county_state_coords["success"] = false;
+            return county_state_coords;
         });
 }
 
