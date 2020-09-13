@@ -6,7 +6,10 @@
 
 var express = require('express');
 var request = require('request');
+var request_promise = require('request-promise');
 var states = require('./public/states.json');
+var api_keys = require('./api-keys.js');
+var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 var app = express();
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
@@ -20,11 +23,48 @@ app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
 // validation and request functions that will be used by routes
+
+// Validate the city/state input by checking data returned from the MapQuest API
 function validateLocation(user_input) {
-    // validation and formatting for user-input received from form submit
-    return      
-    // return either {city:"validCityStr", state:"validStateStr"} or false
-    // if false, route handler will render "no-results" view
+    // Remove all whitespace from the input string
+    let raw_str = user_input.replace(/\s+/g, '');
+    let comma_index = raw_str.indexOf(',');
+    let city_name = raw_str.slice(0, comma_index);
+    let state_name = raw_str.slice(comma_index + 1, raw_str.length);
+    var county_name = undefined;
+
+    // Build the URL for the call to the API
+    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${raw_str}`;
+    let options = {
+        method: "GET",
+        uri: mapquest_url
+    };
+
+    // Send request to the API
+    request_promise(options)
+        .then(function (response) {
+            let mapquest_data = JSON.parse(response);
+            if (mapquest_data && mapquest_data["results"]) {
+                let locations = mapquest_data["results"][0]["locations"];
+                // If the county info doesn't exist, then the city/state pair is invalid
+                if (locations[0]["adminArea4"] === "") {
+                    res.render("no-results");
+                }
+                county_name = locations[0]["adminArea4"];
+            } else {
+                res.render("no-results");
+            }
+            // Package data to return
+            let county_state = {
+                county: county_name,
+                state: state_name
+            }
+            console.log("county_state", county_state);  // todo: remove
+            return county_state;        
+        })
+        .catch(function (err) {
+            res.render("no-results");
+        });
 }
 
 function covidReqHandler(county_name, state_name) {
@@ -76,12 +116,17 @@ app.get("/", function(req, res){
     res.render("home");
 });
 
-app.get("/validate-location", function(req, res) {
+app.get("/main-input-handler", function(req, res) {
     console.log("The user entered:", req.query.location);
-    // Check if the city/state pair exists
 
     // Find the county corresponding to the city and state
-
+    let county_state = validateLocation(req.query.location);
+    console.log("in main handler, county_state is:", county_state)
+    if (county_state) {
+        res.render("results", county_state);   
+    } else {
+        res.render("no-results");
+    }
 });
 
 // app.get("/results", function(req, res){
