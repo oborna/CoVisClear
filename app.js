@@ -7,6 +7,8 @@
 var express = require('express');
 var request = require('request');
 
+require('dotenv').config();
+
 var app = express();
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
@@ -40,7 +42,7 @@ app.get("/results", function(req, res){
     var context = {};
     res.status(200);
     console.log(context);
-    res.render("results");
+    res.render("results", {MAPBOX_KEY: process.env.MAPBOX_KEY});
 });
 
 app.get("/multiple-results", function(req, res){
