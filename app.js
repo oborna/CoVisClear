@@ -82,7 +82,7 @@ function covidReqHandler(county_state) {
         covidAPI += county_substrings[i];
         covidAPI += "%20";
     }
-    covidAPI = covidAPI.slice(0, -3)        // remove the last %20
+    covidAPI = covidAPI.slice(0, -3);        // remove the last %20
 
     // send the request
     let options = {
@@ -129,9 +129,9 @@ function covidReqHandler(county_state) {
 }
 
 // test covidReqHandler and validate location, REMOVE AFTER COMPLETING
-let test_county_state = {county: "Orange", state: "CA"};
-let some_data = covidReqHandler(test_county_state);
-console.log("result: ", some_data);
+// let test_county_state = {county: "Orange", state: "CA"};
+// let some_data = covidReqHandler(test_county_state);
+// console.log("result: ", some_data);
 
 app.get("/", function(req, res){
     var context = {};
@@ -147,7 +147,12 @@ app.get("/main-input-handler", function(req, res) {
     let county_state_coords = validateLocation(req.query.location);
     console.log("in main handler, county_state_coords is:", county_state_coords);
     if (county_state_coords) {
-        res.render("results", county_state_coords);   
+        // get the COVID data for that county
+        let covid_data = covidReqHandler(county_state_coords);
+        if (covid_data) {
+            res.render("results", covid_data);
+        }
+        // res.render("results", county_state_coords);   
     } else {
         res.render("no-results");
     }
