@@ -45,7 +45,7 @@ function validateLocation(user_input, get_covid_data) {
     let longitude = "";
 
     // Build the URL for the call to the API
-    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${city_name},${state_name}`;
+    let mapquest_url = mapquest_base_url + `?key=${api_keys}&location=${city_name},${state_name}`;
     let options = {
         method: "GET",
         uri: mapquest_url
