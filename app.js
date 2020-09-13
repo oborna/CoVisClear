@@ -265,7 +265,7 @@ app.get("/main-input-handler", function(req, res) {
             // get the COVID data for that county
             covidReqHandler(county_state_coords, function(data){
                 console.log("covid_data:", data);
-                res.render("results", data);
+                res.render("results", {data: data});
             });
         }
     
