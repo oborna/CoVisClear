@@ -8,7 +8,7 @@ var express = require('express');
 var request = require('request');
 var request_promise = require('request-promise');
 var states = require('./public/states.json');
-// var api_keys = require('./api-keys.js');
+var api_keys = require('./api-keys.js');
 var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 var app = express();
@@ -25,28 +25,26 @@ app.use(express.json());
 // validation and request functions that will be used by routes
 
 // Validate the city/state input by checking data returned from the MapQuest API
-function validateLocation(user_input) {
+function validateLocation(user_input, get_covid_data) {
 
-    // Object to return
+    // Object to pass to the get_covid_data() callback
     let county_state_coords = {
         county: "",
         state: "",
         latitude: "",
-        longitude: "",
-        success: ""
+        longitude: ""
     };
 
-    // Remove all whitespace from the input string
-    let raw_str = user_input.replace(/\s+/g, '');
-    let comma_index = raw_str.indexOf(',');
-    let city_name = raw_str.slice(0, comma_index);
-    let state_name = raw_str.slice(comma_index + 1, raw_str.length);
-    let county_name = undefined;
-    let latitude = undefined;
-    let longitude = undefined;
+    // let raw_str = user_input.replace(/\s+/g, '');
+    let comma_index = user_input.indexOf(',');
+    let city_name = user_input.slice(0, comma_index);
+    let state_name = user_input.slice(comma_index + 1, user_input.length).replace(/\s+/g, '');
+    let county_name = "";
+    let latitude = "";
+    let longitude = "";
 
     // Build the URL for the call to the API
-    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${raw_str}`;
+    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${city_name},${state_name}`;
     let options = {
         method: "GET",
         uri: mapquest_url
@@ -60,13 +58,15 @@ function validateLocation(user_input) {
                 let locations = mapquest_data["results"][0]["locations"];
                 // If the county info doesn't exist, then the city/state pair is invalid
                 if (locations[0]["adminArea4"] === "") {
-                    county_state_coords["success"] = false;
+                    county_state_coords = {};
+                    get_covid_data(county_state_coords);
                 }
                 county_name = locations[0]["adminArea4"];
                 latitude = locations[0]["displayLatLng"]["lat"];
                 longitude = locations[0]["displayLatLng"]["lng"];
             } else {
-                county_state_coords["success"] = false;
+                county_state_coords = {};
+                get_covid_data(county_state_coords);
             } 
             county_state_coords["county"] = county_name;
             county_state_coords["state"] = state_name;
@@ -74,13 +74,12 @@ function validateLocation(user_input) {
             county_state_coords["longitude"] = longitude;
             
             console.log("county_state_coords in validateLocation():", county_state_coords);
-            county_state_coords["success"] = true;
-            return county_state_coords;
+            get_covid_data(county_state_coords);
         })
         .catch(function (err) {
             console.error(err);
-            county_state_coords["success"] = false;
-            return county_state_coords;
+            county_state_coords = {};
+            get_covid_data(county_state_coords);
         });
 }
 
@@ -250,31 +249,33 @@ app.get("/main-input-handler", function(req, res) {
     console.log("The user entered:", req.query.location);
 
     // Find the county corresponding to the city and state
-    // let county_state_coords = validateLocation(req.query.location);
-    // console.log("in main handler, county_state_coords is:", county_state_coords);
-    
-    // testing
-    let county_state_coords = {county: "Orange", state: "CA"};
-    // let some_data = covidReqHandler(test_county_state);
-    // console.log("result: ", some_data);     // testing, remove when done
-    
-    if (county_state_coords) {
-        // get the COVID data for that county
-        covidReqHandler(county_state_coords, function(data){
-            console.log("covid_data:", data);
-            res.render("results", data);
-        });
-    }
+    validateLocation(req.query.location, retrieve_covid_data);
 
-    // if (county_state_coords) {
-    //     // get the COVID data for that county
-    //     // let covid_data = covidReqHandler(county_state_coords);
-    //     // if (covid_data) {
-    //     //     res.render("results", covid_data);
-    //     // }
-    // } 
-    else {
-        res.render("no-results");
+    function retrieve_covid_data(county_state_coords) {
+        console.log("county_state_coords in retrieve_covid_data():", county_state_coords);
+        // testing
+        // let county_state_coords = {county: "Orange", state: "CA"};
+        // let some_data = covidReqHandler(test_county_state);
+        // console.log("result: ", some_data);     // testing, remove when done
+        
+        if (county_state_coords["county"] !== "") {
+            // get the COVID data for that county
+            covidReqHandler(county_state_coords, function(data){
+                console.log("covid_data:", data);
+                res.render("results", data);
+            });
+        }
+    
+        // if (county_state_coords) {
+        //     // get the COVID data for that county
+        //     // let covid_data = covidReqHandler(county_state_coords);
+        //     // if (covid_data) {
+        //     //     res.render("results", covid_data);
+        //     // }
+        // } 
+        else {
+            res.render("no-results");
+        }
     }
 });
 
