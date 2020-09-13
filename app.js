@@ -8,7 +8,7 @@ var express = require('express');
 var request = require('request');
 var request_promise = require('request-promise');
 var states = require('./public/states.json');
-var api_keys = require('./api-keys.js');
+// var api_keys = require('./api-keys.js');
 var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 var app = express();
@@ -67,47 +67,66 @@ function validateLocation(user_input) {
         });
 }
 
-function covidReqHandler(county_name, state_name) {
+function covidReqHandler(county_state) {
     // generate the api request url based on county name
-    covidAPI = "https://www.trackcorona.live/api/cities/"
-    county_substrings = county_name.split(" ")
+    let covidAPI = "https://www.trackcorona.live/api/cities/"
+    let county_substrings = county_state.county.split(" ");
     for (let i=0; i < county_substrings.length; i++) {
         covidAPI += county_substrings[i];
         covidAPI += "%20";
     }
     covidAPI = covidAPI.slice(0, -3) //remove the last %20 from url
 
+    let options = {
+        method: "GET",
+        uri: covidAPI
+    }
+
     // send the request
-    request(covidAPI, function(err, response, body) {
-        if (!err && response.statusCode < 400) {
-            let info = JSON.parse(response.body);
-            console.log(info);
-            // res.render('lookup', context);      func return info only, the route will render view
-            // multiple results possible, need results based on state code
+    request_promise(options)
+        .then(function (response) {
+            let info = JSON.parse(response);
             let results = info.data;
             let covidData;
+
             if (results.length == 0) {
-                // end func here, what do we return? false?
                 return false;
             } else if (results.length == 1){
                 covidData = results[0];
+                return covidData;
             } else {        // multiple county results, need to get the correct state
-                
+                let state_to_find;
+                for (let j=0; j < states.length; j++) {
+                    if (states[j].Code == county_state.state) {
+                        state_to_find = states[j].State;
+                    }
+                }
+
+                // find the correct state's data
+                for (let i=0; i < results.length; i++) {
+                    let state_cmp = results[i].location.split(",");
+                    if (state_cmp[1].slice(1) == state_to_find) {
+                        covidData = results[i];
+                    }
+                }
+                console.log("found county COVID data:", covidData);
+                return covidData;
             }
-            return covidData;
-        } else {
+        })
+        .catch(function (err) {
             console.log(err);
             if (response) {
                 console.log(response.statusCode);
             }
-            next(err);
             return false;
-        }
-    });
+            // res.render("no-results");
+        });
 }
 
-// test covidReqHandler
-covidReqHandler("riverside");
+// test covidReqHandler and validate location, REMOVE AFTER COMPLETING
+let test_county_state = {county: "Orange", state: "CA"};
+let some_data = covidReqHandler(test_county_state);
+console.log("result: ", some_data);
 
 app.get("/", function(req, res){
     var context = {};
