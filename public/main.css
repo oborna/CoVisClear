@@ -13,3 +13,19 @@
 #home-button {
     text-decoration: none;
 }
+
+/* Visual map display */
+#results-map {
+	height:500px;
+	border:1px solid #000;
+	margin-top:10px;
+}
+
+@media (max-width: 575px) {
+	#results-map {
+		margin-top:0px;
+	}
+	#navMenu {
+		text-align: center;
+	}
+}
