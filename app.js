@@ -12,7 +12,7 @@ var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
-app.set('port', 7500);
+app.set('port', process.env.PORT || 7500);
 
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
@@ -23,6 +23,14 @@ app.get("/", function(req, res){
     res.status(200);
     console.log(context);
     res.render("home");
+});
+
+app.get("/validate-location", function(req, res) {
+    console.log("The user entered:", req.query.location);
+    // Check if the city/state pair exists
+
+    // Find the county corresponding to the city and state
+
 });
 
 app.get("/results", function(req, res){
@@ -49,6 +57,14 @@ app.get("/no-results", function(req, res){
     res.status(200);
     console.log(context);
     res.render("no-results");
+});
+
+app.get("/about", function(req, res){
+    // about page
+    var context = {};
+    res.status(200);
+    console.log(context);
+    res.render("about");
 });
 
 // example get and post routes from previous projects/assignments
