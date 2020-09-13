@@ -12,8 +12,6 @@ var states = require('./public/states.json');
 var api_keys = process.env.MAPQUEST_API_KEY;
 var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
-require('dotenv').config();
-
 var app = express();
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
@@ -280,33 +278,6 @@ app.get("/main-input-handler", function(req, res) {
             res.render("no-results");
         }
     }
-
-});
-
-app.get("/results", function(req, res){
-    // serve successful city search
-    // will the front-end handle request to api and handle api response?
-        // if so, then front end will request each page from server based on its response
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("results", {MAPBOX_KEY: process.env.MAPBOX_KEY});
-});
-
-app.get("/multiple-results", function(req, res){
-    // user needs to select from multiple possible results
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("multiple-results");
-});
-
-app.get("/no-results", function(req, res){
-    // unsuccessful initial search
-    var context = {};
-    res.status(200);
-    console.log(context);
-    res.render("no-results");
 });
 
 app.get("/about", function(req, res){
