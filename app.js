@@ -8,7 +8,7 @@ var express = require('express');
 var request = require('request');
 var request_promise = require('request-promise');
 var states = require('./public/states.json');
-// var api_keys = require('./api-keys.js');
+var api_keys = require('./api-keys.js');
 var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 var app = express();
@@ -108,7 +108,6 @@ function covidReqHandler(county_state) {
                         state_to_find = states[j].State;
                     }
                 }
-
                 for (let i=0; i < results.length; i++) {
                     let state_cmp = results[i].location.split(",");
                     if (state_cmp[1].slice(1) == state_to_find) {
