@@ -6,6 +6,11 @@
 
 var express = require('express');
 var request = require('request');
+var request_promise = require('request-promise');
+var states = require('./public/states.json');
+// var api_keys = require('./api-keys.js');
+var api_keys = process.env.MAPQUEST_API_KEY;
+var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 require('dotenv').config();
 
@@ -20,6 +25,222 @@ app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
+// validation and request functions that will be used by routes
+
+// Validate the city/state input by checking data returned from the MapQuest API
+function validateLocation(user_input, get_covid_data) {
+
+    // Object to pass to the get_covid_data() callback
+    let county_state_coords = {
+        county: "",
+        state: "",
+        latitude: "",
+        longitude: ""
+    };
+
+    // let raw_str = user_input.replace(/\s+/g, '');
+    let comma_index = user_input.indexOf(',');
+    let city_name = user_input.slice(0, comma_index);
+    let state_name = user_input.slice(comma_index + 1, user_input.length).replace(/\s+/g, '');
+    let county_name = "";
+    let latitude = "";
+    let longitude = "";
+
+    // Build the URL for the call to the API
+    let mapquest_url = mapquest_base_url + `?key=${api_keys}&location=${city_name},${state_name}`;
+    let options = {
+        method: "GET",
+        uri: mapquest_url
+    };
+
+    // Send GET request to the API
+    request_promise(options)
+        .then(function (response) {
+            let mapquest_data = JSON.parse(response);
+            if (mapquest_data && mapquest_data["results"]) {
+                let locations = mapquest_data["results"][0]["locations"];
+                // If the county info doesn't exist, then the city/state pair is invalid
+                if (locations[0]["adminArea4"] === "") {
+                    county_state_coords = {};
+                    get_covid_data(county_state_coords);
+                }
+                county_name = locations[0]["adminArea4"];
+                latitude = locations[0]["displayLatLng"]["lat"];
+                longitude = locations[0]["displayLatLng"]["lng"];
+            } else {
+                county_state_coords = {};
+                get_covid_data(county_state_coords);
+            } 
+            county_state_coords["county"] = county_name;
+            county_state_coords["state"] = state_name;
+            county_state_coords["latitude"] = latitude;
+            county_state_coords["longitude"] = longitude;
+            
+            console.log("county_state_coords in validateLocation():", county_state_coords);
+            get_covid_data(county_state_coords);
+        })
+        .catch(function (err) {
+            console.error(err);
+            county_state_coords = {};
+            get_covid_data(county_state_coords);
+        });
+}
+
+// request the COVID API using validated, user-inputted city/state
+function covidReqHandler(county_state, callback){
+    // generate the api request url based on county name
+    let covidAPI = "https://www.trackcorona.live/api/cities/"
+    let county_substrings = county_state.county.split(" ");
+    for (let i=0; i < county_substrings.length; i++) {
+        covidAPI += county_substrings[i];
+        covidAPI += "%20";
+    }
+    covidAPI = covidAPI.slice(0, -3);        // remove the last %20
+
+    // send the request
+    request(covidAPI, function(err, response, body) {
+        if (!err && response.statusCode < 400) {
+            let info = JSON.parse(response.body);
+            let results = info.data;
+            let covidData;
+
+            if (results.length == 0) {
+                return false;
+            } else if (results.length == 1){
+                covidData = results[0];
+                return covidData;
+            } else {        // multiple county results, need to get the correct state
+                let state_to_find;
+                for (let j=0; j < states.length; j++) {
+                    if (states[j].Code == county_state.state) {
+                        state_to_find = states[j].State;
+                    }
+                }
+                for (let i=0; i < results.length; i++) {
+                    let state_cmp = results[i].location.split(",");
+                    if (state_cmp[1].slice(1) == state_to_find) {
+                        covidData = results[i];
+                    }
+                }
+                console.log("found county COVID data:", covidData);
+                // return covidData;
+                callback(covidData);
+            }
+        } else {
+            if (response) {
+                console.log(response.statusCode);
+            }
+            next(err);
+        }
+    });
+}
+
+// const getCovidData = async (county_state) => {
+//     // generate the api request url based on county name
+//     let covidAPI = "https://www.trackcorona.live/api/cities/"
+//     let county_substrings = county_state.county.split(" ");
+//     for (let i=0; i < county_substrings.length; i++) {
+//         covidAPI += county_substrings[i];
+//         covidAPI += "%20";
+//     }
+//     covidAPI = covidAPI.slice(0, -3);        // remove the last %20
+
+//     const result = await covidRequest(covidAPI, county_state);
+//     return result;
+// }
+
+// const covidRequest = async (apiAddr, county_state) => {
+//     // send the request
+//     request(apiAddr, function(err, response, body) {
+//         if (!err && response.statusCode < 400) {
+//             let info = JSON.parse(response.body);
+//             let results = info.data;
+//             let covidData;
+
+//             if (results.length == 0) {
+//                 return false;
+//             } else if (results.length == 1){
+//                 covidData = results[0];
+//                 return covidData;
+//             } else {        // multiple county results, need to get the correct state
+//                 let state_to_find;
+//                 for (let j=0; j < states.length; j++) {
+//                     if (states[j].Code == county_state.state) {
+//                         state_to_find = states[j].State;
+//                     }
+//                 }
+//                 for (let i=0; i < results.length; i++) {
+//                     let state_cmp = results[i].location.split(",");
+//                     if (state_cmp[1].slice(1) == state_to_find) {
+//                         covidData = results[i];
+//                     }
+//                 }
+//                 console.log("found county COVID data:", covidData);
+//                 return covidData;
+//             }
+//         } else {
+//             if (response) {
+//                 console.log(response.statusCode);
+//             }
+//             // next(err);
+//         }
+//     });
+//     return response;
+// }
+
+    // // send the request
+    // let options = {
+    //     method: "GET",
+    //     uri: covidAPI
+    // }
+
+    // request_promise(options)
+    //     .then(function (response) {
+    //         let info = JSON.parse(response);
+    //         let results = info.data;
+    //         let covidData;
+
+    //         if (results.length == 0) {
+    //             return false;
+    //         } else if (results.length == 1){
+    //             covidData = results[0];
+    //             return covidData;
+    //         } else {        // multiple county results, need to get the correct state
+    //             let state_to_find;
+    //             for (let j=0; j < states.length; j++) {
+    //                 if (states[j].Code == county_state.state) {
+    //                     state_to_find = states[j].State;
+    //                 }
+    //             }
+    //             for (let i=0; i < results.length; i++) {
+    //                 let state_cmp = results[i].location.split(",");
+    //                 if (state_cmp[1].slice(1) == state_to_find) {
+    //                     covidData = results[i];
+    //                 }
+    //             }
+    //             console.log("found county COVID data:", covidData);
+    //             return covidData;
+    //         }
+    //     })
+    //     .catch(function (err) {
+    //         console.log(err);
+    //         if (response) {
+    //             console.log(response.statusCode);
+    //         }
+    //         return false;
+    //     });
+
+
+
+// test covidReqHandler and validate location, REMOVE AFTER COMPLETING
+// let test_county_state = {county: "Orange", state: "CA"};
+// let some_data = covidReqHandler(test_county_state);
+// console.log("result: ", some_data);
+// (async () => {
+//     // let data = await getCovidData(test_county_state);
+//     console.log("got data back from API:", await getCovidData(test_county_state));
+// })();
+
 app.get("/", function(req, res){
     var context = {};
     res.status(200);
@@ -27,11 +248,38 @@ app.get("/", function(req, res){
     res.render("home");
 });
 
-app.get("/validate-location", function(req, res) {
+app.get("/main-input-handler", function(req, res) {
     console.log("The user entered:", req.query.location);
-    // Check if the city/state pair exists
 
     // Find the county corresponding to the city and state
+    validateLocation(req.query.location, retrieve_covid_data);
+
+    function retrieve_covid_data(county_state_coords) {
+        console.log("county_state_coords in retrieve_covid_data():", county_state_coords);
+        // testing
+        // let county_state_coords = {county: "Orange", state: "CA"};
+        // let some_data = covidReqHandler(test_county_state);
+        // console.log("result: ", some_data);     // testing, remove when done
+        
+        if (county_state_coords["county"] !== "") {
+            // get the COVID data for that county
+            covidReqHandler(county_state_coords, function(data){
+                console.log("covid_data:", data);
+                res.render("results", data);
+            });
+        }
+    
+        // if (county_state_coords) {
+        //     // get the COVID data for that county
+        //     // let covid_data = covidReqHandler(county_state_coords);
+        //     // if (covid_data) {
+        //     //     res.render("results", covid_data);
+        //     // }
+        // } 
+        else {
+            res.render("no-results");
+        }
+    }
 
 });
 
@@ -68,101 +316,6 @@ app.get("/about", function(req, res){
     console.log(context);
     res.render("about");
 });
-
-// example get and post routes from previous projects/assignments
-// use as framework for this project
-
-// app.get("/results", function(req, res){
-//     res.status(200);
-//     let context = {};
-//     res.render("");
-//     // request(api_url, function(err, response, body) {
-//     //     if (!err && response.statusCode < 400) {
-//     //         let info = JSON.parse(response.body);
-//     //         for (let i = 0; i < 30; i++) {
-//     //             team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//     //         }
-//     //         context.all_teams = team_names;
-//     //         console.log(context);
-//     //         res.render('lookup', context);
-//     //     } else {
-//     //         console.log(err);
-//     //         if (response) {
-//     //             console.log(response.statusCode);
-//     //         }
-//     //         next(err);
-//     //     }
-//     // });
-// });
-
-
-// app.post("/lookup", function(req, res){
-//     // get all the teams names
-//     let api_teams = "https://www.balldontlie.io/api/v1/teams";
-//     let team_names = [];
-//     let context = {};
-//     console.log("id: " + req.body.teams + " season: " + req.body.season);
-//     request(api_teams, function(err, response, body) {
-//         if (!err && response.statusCode < 400) {
-//             let info = JSON.parse(response.body);
-//             for (let i = 0; i < 30; i++) {
-//                 team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//             }
-//             context.all_teams = team_names;
-        
-//             // nested request for actual client input
-//             let season = "seasons[]=";
-//             let teamID = "&team_ids[]=";
-//             let perPage = "&per_page=100";
-
-//             // default is 2019 season and Atlanta Hawks
-//             if (req.body.season < 1979 || req.body.season == null) {
-//                 season += 2019;
-//             } else {
-//                 season += req.body.season;
-//             }
-//             if (req.body.teams < 1 || req.body.teams > 30) {
-//                 teamID += 1;
-//             } else{
-//                 teamID += req.body.teams;
-//             }
-            
-//             // build the API address
-//             apiAddr = "https://www.balldontlie.io/api/v1/games?";
-//             apiAddr += season + teamID + perPage;
-//             console.log("request: " + apiAddr);
-
-//             // context will be passed to handlebars to render data
-//             request(apiAddr, function(err, response, body) {
-//                 if (!err && response.statusCode < 400) {
-//                     // all team names already added
-//                     // current searched team
-//                     context.team = context.all_teams[req.body.teams - 1].full_name;
-//                     context.season = req.body.season;
-//                     let body = JSON.parse(response.body);
-//                     context.data = body.data;
-//                     // clean up the date value context
-//                     for (let i=0; i < context.data.length; i++) {
-//                         context.data[i].date = context.data[i].date.slice(0,10);
-//                         console.log("new date: " + context.data[i].date);
-//                     }
-//                     console.log("context team name: " + context.team);
-//                     res.render("lookup", context);
-//                 } else {
-//                     if (response) {
-//                         console.log(response.statusCode);
-//                     }
-//                     next(err);
-//                 }
-//             });
-//         } else {
-//             if (response) {
-//                 console.log(response.statusCode);
-//             }
-//             next(err);
-//         }
-//     });
-// });
 
 app.use(function(req,res){
     res.status(404);
