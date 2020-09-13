@@ -73,6 +73,7 @@ function validateLocation(user_input) {
         });
 }
 
+// request the COVID API using validated, user-inputted city/state
 function covidReqHandler(county_state) {
     // generate the api request url based on county name
     let covidAPI = "https://www.trackcorona.live/api/cities/"
@@ -81,14 +82,14 @@ function covidReqHandler(county_state) {
         covidAPI += county_substrings[i];
         covidAPI += "%20";
     }
-    covidAPI = covidAPI.slice(0, -3) //remove the last %20 from url
+    covidAPI = covidAPI.slice(0, -3)        // remove the last %20
 
+    // send the request
     let options = {
         method: "GET",
         uri: covidAPI
     }
 
-    // send the request
     request_promise(options)
         .then(function (response) {
             let info = JSON.parse(response);
@@ -108,7 +109,6 @@ function covidReqHandler(county_state) {
                     }
                 }
 
-                // find the correct state's data
                 for (let i=0; i < results.length; i++) {
                     let state_cmp = results[i].location.split(",");
                     if (state_cmp[1].slice(1) == state_to_find) {
@@ -154,32 +154,6 @@ app.get("/main-input-handler", function(req, res) {
     }
 });
 
-// app.get("/results", function(req, res){
-//     // serve successful city search
-//     // will the front-end handle request to api and handle api response?
-//         // if so, then front end will request each page from server based on its response
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("results");
-// });
-
-// app.get("/multiple-results", function(req, res){
-//     // user needs to select from multiple possible results
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("multiple-results");
-// });
-
-// app.get("/no-results", function(req, res){
-//     // unsuccessful initial search
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("no-results");
-// });
-
 app.get("/about", function(req, res){
     // about page
     var context = {};
@@ -187,101 +161,6 @@ app.get("/about", function(req, res){
     console.log(context);
     res.render("about");
 });
-
-// example get and post routes from previous projects/assignments
-// use as framework for this project
-
-// app.get("/results", function(req, res){
-//     res.status(200);
-//     let context = {};
-//     res.render("");
-//     // request(api_url, function(err, response, body) {
-//     //     if (!err && response.statusCode < 400) {
-//     //         let info = JSON.parse(response.body);
-//     //         for (let i = 0; i < 30; i++) {
-//     //             team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//     //         }
-//     //         context.all_teams = team_names;
-//     //         console.log(context);
-//     //         res.render('lookup', context);
-//     //     } else {
-//     //         console.log(err);
-//     //         if (response) {
-//     //             console.log(response.statusCode);
-//     //         }
-//     //         next(err);
-//     //     }
-//     // });
-// });
-
-
-// app.post("/lookup", function(req, res){
-//     // get all the teams names
-//     let api_teams = "https://www.balldontlie.io/api/v1/teams";
-//     let team_names = [];
-//     let context = {};
-//     console.log("id: " + req.body.teams + " season: " + req.body.season);
-//     request(api_teams, function(err, response, body) {
-//         if (!err && response.statusCode < 400) {
-//             let info = JSON.parse(response.body);
-//             for (let i = 0; i < 30; i++) {
-//                 team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//             }
-//             context.all_teams = team_names;
-        
-//             // nested request for actual client input
-//             let season = "seasons[]=";
-//             let teamID = "&team_ids[]=";
-//             let perPage = "&per_page=100";
-
-//             // default is 2019 season and Atlanta Hawks
-//             if (req.body.season < 1979 || req.body.season == null) {
-//                 season += 2019;
-//             } else {
-//                 season += req.body.season;
-//             }
-//             if (req.body.teams < 1 || req.body.teams > 30) {
-//                 teamID += 1;
-//             } else{
-//                 teamID += req.body.teams;
-//             }
-            
-//             // build the API address
-//             apiAddr = "https://www.balldontlie.io/api/v1/games?";
-//             apiAddr += season + teamID + perPage;
-//             console.log("request: " + apiAddr);
-
-//             // context will be passed to handlebars to render data
-//             request(apiAddr, function(err, response, body) {
-//                 if (!err && response.statusCode < 400) {
-//                     // all team names already added
-//                     // current searched team
-//                     context.team = context.all_teams[req.body.teams - 1].full_name;
-//                     context.season = req.body.season;
-//                     let body = JSON.parse(response.body);
-//                     context.data = body.data;
-//                     // clean up the date value context
-//                     for (let i=0; i < context.data.length; i++) {
-//                         context.data[i].date = context.data[i].date.slice(0,10);
-//                         console.log("new date: " + context.data[i].date);
-//                     }
-//                     console.log("context team name: " + context.team);
-//                     res.render("lookup", context);
-//                 } else {
-//                     if (response) {
-//                         console.log(response.statusCode);
-//                     }
-//                     next(err);
-//                 }
-//             });
-//         } else {
-//             if (response) {
-//                 console.log(response.statusCode);
-//             }
-//             next(err);
-//         }
-//     });
-// });
 
 app.use(function(req,res){
     res.status(404);
