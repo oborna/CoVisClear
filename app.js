@@ -7,6 +7,8 @@
 var express = require('express');
 var request = require('request');
 
+require('dotenv').config();
+
 var app = express();
 var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
@@ -17,9 +19,6 @@ app.set('port', process.env.PORT || 7500);
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
-
-const DISPLAY_MAP_KEY = process.env.MAPBOX_KEY;
-app.locals.MAPBOX_KEY = DISPLAY_MAP_KEY;
 
 app.get("/", function(req, res){
     var context = {};
@@ -43,7 +42,7 @@ app.get("/results", function(req, res){
     var context = {};
     res.status(200);
     console.log(context);
-    res.render("results");
+    res.render("results", {MAPBOX_KEY: process.env.MAPBOX_KEY});
 });
 
 app.get("/multiple-results", function(req, res){
