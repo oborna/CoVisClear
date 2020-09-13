@@ -84,47 +84,65 @@ function validateLocation(user_input) {
         });
 }
 
-function covidReqHandler(county_name, state_name) {
+// request the COVID API using validated, user-inputted city/state
+function covidReqHandler(county_state) {
     // generate the api request url based on county name
-    covidAPI = "https://www.trackcorona.live/api/cities/"
-    county_substrings = county_name.split(" ")
+    let covidAPI = "https://www.trackcorona.live/api/cities/"
+    let county_substrings = county_state.county.split(" ");
     for (let i=0; i < county_substrings.length; i++) {
         covidAPI += county_substrings[i];
         covidAPI += "%20";
     }
-    covidAPI = covidAPI.slice(0, -3) //remove the last %20 from url
+    covidAPI = covidAPI.slice(0, -3);        // remove the last %20
 
     // send the request
-    request(covidAPI, function(err, response, body) {
-        if (!err && response.statusCode < 400) {
-            let info = JSON.parse(response.body);
-            console.log(info);
-            // res.render('lookup', context);      func return info only, the route will render view
-            // multiple results possible, need results based on state code
+    let options = {
+        method: "GET",
+        uri: covidAPI
+    }
+
+    request_promise(options)
+        .then(function (response) {
+            let info = JSON.parse(response);
             let results = info.data;
             let covidData;
+
             if (results.length == 0) {
-                // end func here, what do we return? false?
                 return false;
             } else if (results.length == 1){
                 covidData = results[0];
+                return covidData;
             } else {        // multiple county results, need to get the correct state
-                
+                let state_to_find;
+                for (let j=0; j < states.length; j++) {
+                    if (states[j].Code == county_state.state) {
+                        state_to_find = states[j].State;
+                    }
+                }
+                for (let i=0; i < results.length; i++) {
+                    let state_cmp = results[i].location.split(",");
+                    if (state_cmp[1].slice(1) == state_to_find) {
+                        covidData = results[i];
+                    }
+                }
+                console.log("found county COVID data:", covidData);
+                return covidData;
             }
-            return covidData;
-        } else {
+        })
+        .catch(function (err) {
             console.log(err);
             if (response) {
                 console.log(response.statusCode);
             }
-            next(err);
             return false;
-        }
-    });
+            // res.render("no-results");
+        });
 }
 
-// test covidReqHandler
-covidReqHandler("riverside");
+// test covidReqHandler and validate location, REMOVE AFTER COMPLETING
+// let test_county_state = {county: "Orange", state: "CA"};
+// let some_data = covidReqHandler(test_county_state);
+// console.log("result: ", some_data);
 
 app.get("/", function(req, res){
     var context = {};
@@ -138,34 +156,18 @@ app.get("/main-input-handler", function(req, res) {
 
     // Find the county corresponding to the city and state
     let county_state_coords = validateLocation(req.query.location);
-    console.log("county_state_coords in GET handler:", county_state_coords);
+    console.log("in main handler, county_state_coords is:", county_state_coords);
+    if (county_state_coords) {
+        // get the COVID data for that county
+        let covid_data = covidReqHandler(county_state_coords);
+        if (covid_data) {
+            res.render("results", covid_data);
+        }
+        // res.render("results", county_state_coords);   
+    } else {
+        res.render("no-results");
+    }
 });
-
-// app.get("/results", function(req, res){
-//     // serve successful city search
-//     // will the front-end handle request to api and handle api response?
-//         // if so, then front end will request each page from server based on its response
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("results");
-// });
-
-// app.get("/multiple-results", function(req, res){
-//     // user needs to select from multiple possible results
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("multiple-results");
-// });
-
-// app.get("/no-results", function(req, res){
-//     // unsuccessful initial search
-//     var context = {};
-//     res.status(200);
-//     console.log(context);
-//     res.render("no-results");
-// });
 
 app.get("/about", function(req, res){
     // about page
@@ -174,101 +176,6 @@ app.get("/about", function(req, res){
     console.log(context);
     res.render("about");
 });
-
-// example get and post routes from previous projects/assignments
-// use as framework for this project
-
-// app.get("/results", function(req, res){
-//     res.status(200);
-//     let context = {};
-//     res.render("");
-//     // request(api_url, function(err, response, body) {
-//     //     if (!err && response.statusCode < 400) {
-//     //         let info = JSON.parse(response.body);
-//     //         for (let i = 0; i < 30; i++) {
-//     //             team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//     //         }
-//     //         context.all_teams = team_names;
-//     //         console.log(context);
-//     //         res.render('lookup', context);
-//     //     } else {
-//     //         console.log(err);
-//     //         if (response) {
-//     //             console.log(response.statusCode);
-//     //         }
-//     //         next(err);
-//     //     }
-//     // });
-// });
-
-
-// app.post("/lookup", function(req, res){
-//     // get all the teams names
-//     let api_teams = "https://www.balldontlie.io/api/v1/teams";
-//     let team_names = [];
-//     let context = {};
-//     console.log("id: " + req.body.teams + " season: " + req.body.season);
-//     request(api_teams, function(err, response, body) {
-//         if (!err && response.statusCode < 400) {
-//             let info = JSON.parse(response.body);
-//             for (let i = 0; i < 30; i++) {
-//                 team_names.push({team_id: info.data[i].id, full_name: info.data[i].full_name});
-//             }
-//             context.all_teams = team_names;
-        
-//             // nested request for actual client input
-//             let season = "seasons[]=";
-//             let teamID = "&team_ids[]=";
-//             let perPage = "&per_page=100";
-
-//             // default is 2019 season and Atlanta Hawks
-//             if (req.body.season < 1979 || req.body.season == null) {
-//                 season += 2019;
-//             } else {
-//                 season += req.body.season;
-//             }
-//             if (req.body.teams < 1 || req.body.teams > 30) {
-//                 teamID += 1;
-//             } else{
-//                 teamID += req.body.teams;
-//             }
-            
-//             // build the API address
-//             apiAddr = "https://www.balldontlie.io/api/v1/games?";
-//             apiAddr += season + teamID + perPage;
-//             console.log("request: " + apiAddr);
-
-//             // context will be passed to handlebars to render data
-//             request(apiAddr, function(err, response, body) {
-//                 if (!err && response.statusCode < 400) {
-//                     // all team names already added
-//                     // current searched team
-//                     context.team = context.all_teams[req.body.teams - 1].full_name;
-//                     context.season = req.body.season;
-//                     let body = JSON.parse(response.body);
-//                     context.data = body.data;
-//                     // clean up the date value context
-//                     for (let i=0; i < context.data.length; i++) {
-//                         context.data[i].date = context.data[i].date.slice(0,10);
-//                         console.log("new date: " + context.data[i].date);
-//                     }
-//                     console.log("context team name: " + context.team);
-//                     res.render("lookup", context);
-//                 } else {
-//                     if (response) {
-//                         console.log(response.statusCode);
-//                     }
-//                     next(err);
-//                 }
-//             });
-//         } else {
-//             if (response) {
-//                 console.log(response.statusCode);
-//             }
-//             next(err);
-//         }
-//     });
-// });
 
 app.use(function(req,res){
     res.status(404);
