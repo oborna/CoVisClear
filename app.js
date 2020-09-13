@@ -18,6 +18,8 @@ app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
+const MAPBOX_KEY = process.env.MAPBOX_KEY;
+
 app.get("/", function(req, res){
     var context = {};
     res.status(200);
