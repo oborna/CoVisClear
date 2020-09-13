@@ -124,7 +124,6 @@ function covidReqHandler(county_state) {
                 console.log(response.statusCode);
             }
             return false;
-            // res.render("no-results");
         });
 }
 
@@ -152,7 +151,6 @@ app.get("/main-input-handler", function(req, res) {
         if (covid_data) {
             res.render("results", covid_data);
         }
-        // res.render("results", county_state_coords);   
     } else {
         res.render("no-results");
     }
