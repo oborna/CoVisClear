@@ -42,12 +42,9 @@ function validateLocation(user_input, get_covid_data, res) {
     let comma_index = user_input.indexOf(',');
     let city_name = user_input.slice(0, comma_index);
     let state_name = user_input.slice(comma_index + 1, user_input.length).replace(/\s+/g, '');
-    let county_name = "";
-    let latitude = "";
-    let longitude = "";
 
     // Build the URL for the call to the API
-    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${city_name},${state_name}`;
+    let mapquest_url = mapquest_base_url + `?key=${api_keys.mapquestKey}&location=${city_name},${state_name},US`;
     let options = {
         method: "GET",
         uri: mapquest_url
@@ -57,26 +54,30 @@ function validateLocation(user_input, get_covid_data, res) {
     request_promise(options)
         .then(function (response) {
             let mapquest_data = JSON.parse(response);
-            console.log("mapquest_data:", mapquest_data.results[0]);
             if (mapquest_data && mapquest_data["results"]) {
                 let locations = mapquest_data["results"][0]["locations"];
-                // If the county info doesn't exist, then the city/state pair is invalid
-                if (locations[0]["adminArea4"] === "") {
-                    county_state_coords = {};
-                    get_covid_data(county_state_coords, res);
+                console.log("mapquest data:", locations);
+                for (let i=0; i < locations.length; i++) {
+                    let possible_result = locations[i];
+                    if (possible_result.adminArea1 == 'US') {
+                        if (possible_result.adminArea3 == state_name) {
+                            if (possible_result.adminArea5 == city_name) {
+                                if (possible_result.adminArea4 != '') {
+                                    county_state_coords.county = possible_result.adminArea4;
+                                    county_state_coords.latitude = possible_result.latLng.lat;
+                                    county_state_coords.longitude = possible_result.latLng.lng;
+                                    county_state_coords.state = state_name;
+                                    break;
+                                } else {    // no county found, move on and try again
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                 }
-                county_name = locations[0]["adminArea4"];
-                latitude = locations[0]["displayLatLng"]["lat"];
-                longitude = locations[0]["displayLatLng"]["lng"];
             } else {
                 county_state_coords = {};
-                get_covid_data(county_state_coords, res);
             } 
-            county_state_coords["county"] = county_name;
-            county_state_coords["state"] = state_name;
-            county_state_coords["latitude"] = latitude;
-            county_state_coords["longitude"] = longitude;
-            
             console.log("county_state_coords in validateLocation():", county_state_coords);
             get_covid_data(county_state_coords, res);
         })
@@ -87,7 +88,7 @@ function validateLocation(user_input, get_covid_data, res) {
         });
 }
 
-// request the COVID API using validated, user-inputted city/state
+// called by retrieve_covid_data - handles actual covidAPI
 function covidReqHandler(county_state, callback){
     // results passed through covidData
     let covidData;
@@ -150,7 +151,7 @@ function covidReqHandler(county_state, callback){
     } 
 }
 
-// called by GET route handler in order to het
+// called by validate_location within main-input-handler - renders covidAPI results
 function retrieve_covid_data(county_state_coords, res) {
     console.log("county_state_coords in retrieve_covid_data():", county_state_coords);
 
