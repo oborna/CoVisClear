@@ -8,8 +8,8 @@ var express = require('express');
 var request = require('request');
 var request_promise = require('request-promise');
 var states = require('./public/states.json');
-var api_keys = require('./api-keys.js');
-// var api_keys = process.env.MAPQUEST_API_KEY;
+//var api_keys = require('./api-keys.js');
+var api_keys = process.env.MAPQUEST_API_KEY;
 var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
 
 require('dotenv').config();
