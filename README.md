@@ -1,6 +1,7 @@
 # CoVisClear
 
 CoVisClear is a web application that allows users to look up COVID-19 case data based on location.
+![Screenshot of CoVisClear](covisclear.PNG)
 
 ## Live Version
 
@@ -23,6 +24,7 @@ npm start
 ## Usage Example
 
 ![GIF of CoVisClear being used](covisclear.gif)
+
 ## Authors
 
 * [Anjanette Oborn](https://github.com/oborna)
