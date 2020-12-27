@@ -8,9 +8,9 @@ var express = require('express');
 var request = require('request');
 var request_promise = require('request-promise');
 var states = require('./public/states.json');
-// var api_keys = require('./api-keys.js');
-var api_keys = process.env.MAPQUEST_API_KEY;
-var mapquest_base_url = 'http://open.mapquestapi.com/geocoding/v1/address';
+//var api_keys = require('./api-keys.js');
+//var api_keys = process.env.MAPQUEST_API_KEY;
+var mapquest_base_url = 'http://www.mapquestapi.com/geocoding/v1/address';
 
 require('dotenv').config();
 
@@ -47,11 +47,12 @@ function find_location(user_input, retrieve_covid_data, res) {
     let longitude = "";
 
     // Build the URL for the API call
-    let mapquest_url = mapquest_base_url + `?key=${api_keys}&location=${city_name},${state_name}`;
+    let mapquest_url = mapquest_base_url + `?key=${process.env.MAPQUEST_API_KEY}&location=${city_name},${state_name}`;
     let options = {
         method: "GET",
         uri: mapquest_url
     };
+    console.log(mapquest_url)
 
     // Send GET request to the API
     request_promise(options)
@@ -105,7 +106,7 @@ function retrieve_covid_data(county_state_coords, res) {
                 return;
             }
             console.log("COVID data to pass to results page:", data);
-            res.render("results", {MAPBOX_KEY: process.env.MAPBOX_KEY, data: data} );
+            res.render("results", {MAPBOX_API_KEY: process.env.MAPBOX_API_KEY, data: data, county_state_coords: county_state_coords} );
         });
     }
 }

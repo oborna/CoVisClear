@@ -15,20 +15,20 @@ integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0v
 </div>
 
 <script>
-var MAPBOX_KEY = "{{ MAPBOX_KEY }}" ;
-var LATITUDE_NO = {{ data.latitude }};
-var LONGITUDE_NO = {{ data.longitude }};
+var MAPBOX_API_KEY = "{{ MAPBOX_API_KEY }}" ;
+var LATITUDE_NO = {{ county_state_coords.latitude }};
+var LONGITUDE_NO = {{ county_state_coords.longitude }};
 </script>
 <script src="map.js">
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
 
 <div class="row py-3">
 	<div class="col-md-4"></div>
-	<div class="col-md-4 rounded border border-dark text-center">
-	<h4 class="pt-2">Results for {{data.location}}</h4>
+	<div class="col-md-4 rounded border border-dark bg-white text-center">
+	<h4 class="pt-2 pb-2">Results for {{data.location}}</h4>
 	<h5>{{data.confirmed}} Cases Confirmed</h5>
 	<h5>{{data.dead}} Deaths Confirmed</h5>
-	<h5 class="pb-2">{{data.recovered}} Recovered</h5>
+	<h5 class="pb-2">{{#if data.recovered}}{{data.recovered}} Recovered{{/if}}</h5>
 	</div>
 	<div class="col-md-4"></div>
 </div>

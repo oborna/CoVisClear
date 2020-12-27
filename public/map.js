@@ -10,7 +10,7 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
     id: 'mapbox/streets-v11',
     tileSize: 512,
     zoomOffset: -1,
-    accessToken: MAPBOX_KEY
+    accessToken: MAPBOX_API_KEY
 }).addTo(mymap);
 
 // Add circle marker
