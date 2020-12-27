@@ -28,7 +28,7 @@ app.use(express.json());
 // validation and request functions that will be used by routes
 
 // Find the county for the inputted city/state using the MapQuest API
-function find_location(user_input, retrieve_covid_data) {
+function find_location(user_input, retrieve_covid_data, res) {
 
     // Object to pass to the retrieve_covid_data() callback
     let county_state_coords = {
@@ -62,8 +62,8 @@ function find_location(user_input, retrieve_covid_data) {
 
                 // If county info doesn't exist for the inputted location
                 if (locations[0]["adminArea4"] === "") {
-                    county_state_coords = {};
-                    retrieve_covid_data(county_state_coords);
+                    res.render("no-results");
+                    return;
                 }
                 else {
                     county_name = locations[0]["adminArea4"];
@@ -74,38 +74,37 @@ function find_location(user_input, retrieve_covid_data) {
                     county_state_coords["latitude"] = latitude;
                     county_state_coords["longitude"] = longitude;
                     console.log("county_state_coords in find_location():", county_state_coords);
-                    retrieve_covid_data(county_state_coords);        
+                    retrieve_covid_data(county_state_coords, res);        
                 }
             }
             else {
-                county_state_coords = {};
-                retrieve_covid_data(county_state_coords);
+                res.render("no-results");
+                return;
             } 
         })
-        .catch(function (err) {
+        .catch(function(err) {
             console.error(err);
-            county_state_coords = {};
-            retrieve_covid_data(county_state_coords);
+            res.render("no-results");
+            return;
         });
 }
 
-function retrieve_covid_data(county_state_coords) {
-    console.log("county_state_coords in retrieve_covid_data():", county_state_coords);
-    // testing
-    // let county_state_coords = {county: "Orange", state: "CA"};
-    // let some_data = covidReqHandler(test_county_state);
-    // console.log("result: ", some_data);     // testing, remove when done
-    
+function retrieve_covid_data(county_state_coords, res) {
     // Check if county_state_coords is an empty object, which means that
     // the county could not be found in find_location()
     if (Object.keys(county_state_coords).length === 0 &&
     county_state_coords.constructor === Object) {
         res.render("no-results");
+        return;
     }
     else {
         // get the COVID data for that county
         covidReqHandler(county_state_coords, function(data){
-            console.log("covid_data:", data);
+            if (data === false) {
+                res.render("no-results");
+                return;
+            }
+            console.log("COVID data to pass to results page:", data);
             res.render("results", {MAPBOX_KEY: process.env.MAPBOX_KEY, data: data} );
         });
     }
@@ -127,13 +126,14 @@ function covidReqHandler(county_state, callback){
         if (!err && response.statusCode < 400) {
             let info = JSON.parse(response.body);
             let results = info.data;
+            // console.log("All results from TrackCorona API:", results);
             let covidData;
 
             if (results.length == 0) {
-                return false;
+                callback(false);
             } else if (results.length == 1){
                 covidData = results[0];
-                return covidData;
+                callback(covidData);
             } else {        // multiple county results, need to get the correct state
                 let state_to_find;
                 for (let j=0; j < states.length; j++) {
@@ -147,15 +147,14 @@ function covidReqHandler(county_state, callback){
                         covidData = results[i];
                     }
                 }
-                console.log("found county COVID data:", covidData);
-                // return covidData;
                 callback(covidData);
             }
         } else {
+            console.log(err);
             if (response) {
                 console.log(response.statusCode);
             }
-            next(err);
+            callback(false);
         }
     });
 }
@@ -277,7 +276,7 @@ app.get("/main-input-handler", function(req, res) {
     console.log("The user entered:", req.query.location);
 
     // Find the county corresponding to the city and state
-    find_location(req.query.location, retrieve_covid_data);
+    find_location(req.query.location, retrieve_covid_data, res);
 });
 
 app.get("/results", function(req, res){
