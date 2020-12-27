@@ -28,7 +28,7 @@ var LONGITUDE_NO = {{ data.longitude }};
 	<h4 class="pt-2">Results for {{data.location}}</h4>
 	<h5>{{data.confirmed}} Cases Confirmed</h5>
 	<h5>{{data.dead}} Deaths Confirmed</h5>
-	<h5 class="pb-2">{{data.recovered}} Recovered</h5>
+	<h5 class="pb-2">{{#if data.recovered}}{{data.recovered}} Recovered{{/if}}</h5>
 	</div>
 	<div class="col-md-4"></div>
 </div>
