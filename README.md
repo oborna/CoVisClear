@@ -15,7 +15,14 @@ Use the package manager [npm](https://www.npmjs.com/) to install the necessary p
 npm install
 ```
 
-To run the application locally, use [Node.js](https://nodejs.org/en/).
+Create a .env file in the same directory as app.js. Use .sample-env as a reference. Be sure to 
+assign a valid value to all environment variables in the .env file.
+```
+MAPQUEST_API_KEY=[value]
+MAPBOX_API_KEY=[value]
+```
+
+To run the application, use [Node.js](https://nodejs.org/en/).
 
 ```bash
 npm start
