@@ -16,7 +16,8 @@ npm install
 ```
 
 Create a .env file in the same directory as app.js. Use .sample-env as a reference. Be sure to 
-assign a valid value to all environment variables in the .env file.
+assign a valid value to all environment variables in the .env file. You will need to sign up for a
+[MapQuest](https://developer.mapquest.com/) API key and [MapBox](https://www.mapbox.com/) API key first.
 ```
 MAPQUEST_API_KEY=[value]
 MAPBOX_API_KEY=[value]
